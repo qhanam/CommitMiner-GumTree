@@ -1,0 +1,12 @@
+target/
+samples/
+.settings/
+.project
+.classpath
+.recommenders/
+.metadata/
+.idea/
+*.iml
+.gradle/
+build/
+.vagrant/

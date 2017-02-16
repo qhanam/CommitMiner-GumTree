@@ -1,0 +1,67 @@
+/*
+ * This file is part of GumTree.
+ *
+ * GumTree is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * GumTree is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with GumTree.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Copyright 2011 Jean-Rémy Falleri
+ */
+
+package com.github.gumtreediff.gen.js;
+
+import ca.ubc.ece.salt.gumtree.gen.js.ConditionalPreProcessor;
+import ca.ubc.ece.salt.gumtree.gen.js.ShortCircuitPreProcessor;
+import ca.ubc.ece.salt.gumtree.gen.js.VarPreProcessor;
+
+import com.github.gumtreediff.gen.Register;
+import com.github.gumtreediff.gen.Registry;
+import com.github.gumtreediff.gen.TreeGenerator;
+import com.github.gumtreediff.tree.TreeContext;
+
+import org.mozilla.javascript.CompilerEnvirons;
+import org.mozilla.javascript.Parser;
+import org.mozilla.javascript.ast.AstRoot;
+
+import java.io.IOException;
+import java.io.Reader;
+
+@Register(id = "js-rhino", accept = "\\.js$", priority = Registry.Priority.MAXIMUM)
+public class RhinoTreeGenerator extends TreeGenerator {
+
+    public TreeContext generate(Reader r, boolean preProcess) throws IOException {
+        CompilerEnvirons env = new CompilerEnvirons();
+        env.setRecordingLocalJsDocComments(true);
+        env.setAllowSharpComments(true);
+        env.setRecordingComments(true);
+        Parser p = new Parser(env);
+        AstRoot root = p.parse(r, null, 1);
+        
+       if(preProcess) {
+    	   /* Expand variable initializers. */
+    	   VarPreProcessor varPreProcessor = new VarPreProcessor();
+    	   varPreProcessor.process(root);
+    	   
+    	   /* Expand the ternary operators. */
+    	   ConditionalPreProcessor conditionalPreProcessor = new ConditionalPreProcessor();
+    	   conditionalPreProcessor.process(root);
+    	   
+    	   /* Expand short circuit operators. */
+    	   ShortCircuitPreProcessor shortCircuitPreProcessor = new ShortCircuitPreProcessor();
+    	   shortCircuitPreProcessor.process(root);
+       }
+        
+        RhinoTreeVisitor visitor = new RhinoTreeVisitor(root);
+        root.visitAll(visitor);
+        return visitor.getTree(root);
+    }
+}
