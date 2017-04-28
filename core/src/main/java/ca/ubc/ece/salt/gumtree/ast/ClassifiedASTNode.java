@@ -91,6 +91,11 @@ public interface ClassifiedASTNode {
      * Returns true if this node represents a statement.
      */
     boolean isStatement();
+    
+    /**
+     * Returns true if this node represents a function.
+     */
+    boolean isFunction();
 
     /** The change type from AST differencing. **/
     public enum ChangeType {

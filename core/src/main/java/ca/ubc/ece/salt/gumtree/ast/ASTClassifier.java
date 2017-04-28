@@ -155,8 +155,11 @@ public class ASTClassifier {
 	 */
 	private static void labelAncestorsUpdated(ITree child2) throws InvalidClassException {
 
-		/* If this is a statement, there is no ancestor to label. */
-		if(child2.getClassifiedASTNode().isStatement()) return;
+//		/* If this is a statement, there is no ancestor to label. */
+//		if(child2.getClassifiedASTNode().isStatement()) return;
+
+		/* If this is a function, there is no ancestor to label. */
+		if(child2.getClassifiedASTNode().isFunction()) return;
 
 		/* Climb the tree and label all unchanged nodes until we get to the
 		 * statement. */
@@ -170,7 +173,7 @@ public class ASTClassifier {
 			ancestor.getClassifiedASTNode().setChangeType(ChangeType.UPDATED);
 
 			/* If we've reached the statement level, stop. */
-			if(ancestor.getClassifiedASTNode().isStatement()) {
+			if(ancestor.getClassifiedASTNode().isFunction()) {
 				break;
 			}
 
