@@ -136,7 +136,7 @@ class ConditionalExpand implements NodeVisitor {
 				ConditionalExpression ce = (ConditionalExpression) ie.getRight();
 				if(this.isTrueBranch) ie.setRight(ce.getTrueExpression());
 				else ie.setRight(ce.getFalseExpression());
-
+				
 				/* Add the test condition. */
 				this.setCondition(ce.getTestExpression());
 

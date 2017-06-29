@@ -96,6 +96,11 @@ public interface ClassifiedASTNode {
      * Returns true if this node represents a function.
      */
     boolean isFunction();
+    
+    /**
+     * @return the absolute position of the node in the original (not pre-processed) AST.
+     */
+    int getFixedPosition();
 
     /** The change type from AST differencing. **/
     public enum ChangeType {
