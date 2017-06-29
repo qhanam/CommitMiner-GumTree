@@ -98,6 +98,11 @@ public interface ClassifiedASTNode {
     boolean isFunction();
     
     /**
+     * Set the absolute position of the node in the original (not pre-processed) AST.
+     */
+    void setFixedPosition(int fixedPosition);
+    
+    /**
      * @return the absolute position of the node in the original (not pre-processed) AST.
      */
     int getFixedPosition();

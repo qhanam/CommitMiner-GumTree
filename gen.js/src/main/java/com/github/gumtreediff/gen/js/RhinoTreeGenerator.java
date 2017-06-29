@@ -20,6 +20,7 @@
 package com.github.gumtreediff.gen.js;
 
 import ca.ubc.ece.salt.gumtree.gen.js.ConditionalPreProcessor;
+import ca.ubc.ece.salt.gumtree.gen.js.FixPositionPreProcessor;
 import ca.ubc.ece.salt.gumtree.gen.js.ShortCircuitPreProcessor;
 import ca.ubc.ece.salt.gumtree.gen.js.VarPreProcessor;
 
@@ -47,6 +48,10 @@ public class RhinoTreeGenerator extends TreeGenerator {
         AstRoot root = p.parse(r, null, 1);
         
        if(preProcess) {
+    	   /* Fix the absolute positions of the nodes before changing the AST. */
+    	   FixPositionPreProcessor fixPosPreProcessor = new FixPositionPreProcessor();
+    	   fixPosPreProcessor.process(root);
+    	   
     	   /* Expand variable initializers. */
     	   VarPreProcessor varPreProcessor = new VarPreProcessor();
     	   varPreProcessor.process(root);
