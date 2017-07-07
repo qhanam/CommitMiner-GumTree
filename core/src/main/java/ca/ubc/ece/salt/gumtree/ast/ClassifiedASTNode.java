@@ -49,6 +49,16 @@ public interface ClassifiedASTNode {
 	 * 		   source or destination node.
 	 */
 	Version getVersion();
+	
+    /**
+     * Indicate that this node provided a dummy value during analysis.
+     */
+	void setDummy();
+	
+	/**
+	 * @return {@code true} if this node provided a dummy value during analysis.
+	 */
+	boolean isDummy();
 
     /**
      * @param changeType The change applied to this node from AST differencing.
