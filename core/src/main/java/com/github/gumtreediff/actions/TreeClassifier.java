@@ -56,7 +56,6 @@ public abstract class TreeClassifier {
     public TreeClassifier(TreeContext src, TreeContext dst, Set<Mapping> rawMappings, List<Action> actions) {
         this(src, dst, rawMappings);
         this.actions = actions;
-        classify();
     }
 
     public TreeClassifier(TreeContext src, TreeContext dst, Matcher m) {
@@ -64,7 +63,6 @@ public abstract class TreeClassifier {
         ActionGenerator g = new ActionGenerator(src.getRoot(), dst.getRoot(), m.getMappings());
         g.generate();
         this.actions = g.getActions();
-        classify();
     }
 
     private TreeClassifier(TreeContext src, TreeContext dst, Set<Mapping> rawMappings) {
