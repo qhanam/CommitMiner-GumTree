@@ -52,6 +52,7 @@ public class ASTClassifier {
 		 * node mappings for MOVED and UPDATED nodes. */
 
 		this.classifyASTNode(this.srcTree, ChangeType.UNCHANGED, true);
+		this.resetUniqueID();
 		this.classifyASTNode(this.dstTree, ChangeType.UNCHANGED, false);
 
 	}
@@ -62,6 +63,13 @@ public class ASTClassifier {
 	private int getUniqueID() {
 		this.uniqueID += 16; // Allow for offsetting the unique ID. Yields 2^28 addresses (270M).
 		return this.uniqueID;
+	}
+	
+	/**
+	 * Reset the unique ID for nodes in between the src and dst analysis.
+	 */
+	private void resetUniqueID() {
+		this.uniqueID = 0;
 	}
 
 	private void classifyAs(Set<ITree> set, ChangeType changeType) throws InvalidClassException {
