@@ -52,7 +52,7 @@ public class ASTClassifier {
 		 * node mappings for MOVED and UPDATED nodes. */
 
 		this.classifyASTNode(this.srcTree, ChangeType.UNCHANGED, true);
-		this.resetUniqueID();
+//		this.resetUniqueID();
 		this.classifyASTNode(this.dstTree, ChangeType.UNCHANGED, false);
 
 	}
