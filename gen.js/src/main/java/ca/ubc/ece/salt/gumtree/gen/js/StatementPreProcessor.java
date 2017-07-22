@@ -154,7 +154,7 @@ public abstract class StatementPreProcessor implements PreProcessor {
 			if(newStatement != null) node.setElsePart(newStatement);
 		}
 		
-		if(node.getElsePart().getType() == Token.IF) {
+		if(node.getElsePart() instanceof IfStatement) {
 			this.processStatementsSwitch(node.getElsePart());
 		}
 
