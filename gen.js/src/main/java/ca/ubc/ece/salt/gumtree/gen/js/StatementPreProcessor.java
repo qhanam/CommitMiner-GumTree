@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.mozilla.javascript.Node;
+import org.mozilla.javascript.Token;
 import org.mozilla.javascript.ast.AstNode;
 import org.mozilla.javascript.ast.AstRoot;
 import org.mozilla.javascript.ast.Block;
@@ -151,6 +152,10 @@ public abstract class StatementPreProcessor implements PreProcessor {
 		} else {
 			AstNode newStatement = this.processStatement(node.getElsePart());
 			if(newStatement != null) node.setElsePart(newStatement);
+		}
+		
+		if(node.getElsePart().getType() == Token.IF) {
+			this.processStatementsSwitch(node.getElsePart());
 		}
 
 	}
