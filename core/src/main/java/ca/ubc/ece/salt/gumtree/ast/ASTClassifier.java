@@ -52,7 +52,6 @@ public class ASTClassifier {
 		 * node mappings for MOVED and UPDATED nodes. */
 
 		this.classifyASTNode(this.srcTree, ChangeType.UNCHANGED, true);
-//		this.resetUniqueID();
 		this.classifyASTNode(this.dstTree, ChangeType.UNCHANGED, false);
 
 	}
@@ -78,7 +77,8 @@ public class ASTClassifier {
 		 * corresponding AST node with the Tree node's class. */
 		for(ITree tree : set) {
 			ClassifiedASTNode astNode = tree.getClassifiedASTNode();
-            astNode.setChangeType(changeType);
+		    astNode.setChangeType(changeType);
+		    astNode.setChangeTypeNoProp(changeType);
 		}
 
 	}
@@ -103,11 +103,18 @@ public class ASTClassifier {
 		/* We may need to assign a change type if it is null (unchanged). */
 		if(nodeChangeType == null) {
 			classifiedNode.setChangeType(ChangeType.UNCHANGED);
+			classifiedNode.setChangeTypeNoProp(ChangeType.UNCHANGED);
 			nodeChangeType = ChangeType.UNCHANGED;
 		}
 
 		if(nodeChangeType == ChangeType.UNCHANGED) {
 			classifiedNode.setChangeType(changeType);
+			if(changeType == ChangeType.INSERTED 
+					|| changeType == ChangeType.REMOVED 
+					|| changeType == ChangeType.MOVED)
+				classifiedNode.setChangeTypeNoProp(ChangeType.INHERITED);
+			else
+				classifiedNode.setChangeTypeNoProp(nodeChangeType);
 		}
 		else {
 			/* The node has been changed. */

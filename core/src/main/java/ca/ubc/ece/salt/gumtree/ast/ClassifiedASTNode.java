@@ -59,6 +59,11 @@ public interface ClassifiedASTNode {
 	 * @return {@code true} if this node provided a dummy value during analysis.
 	 */
 	boolean isDummy();
+	
+    /**
+     * @param moved If a move was applied to this node from AST differencing.
+     */
+	void setMoved(boolean moved);
 
     /**
      * @param changeType The change applied to this node from AST differencing.
@@ -66,9 +71,19 @@ public interface ClassifiedASTNode {
     void setChangeType(ChangeType changeType);
 
     /**
-     * @return The change applied to this node from AST differencing.
+     * @return The edit operation applied to this node from AST differencing.
      */
     ChangeType getChangeType();
+
+    /**
+     * @return The non-propagated edit operation applied to this node from AST differencing.
+     */
+	void setChangeTypeNoProp(ChangeType changeTypeNoProp);
+
+    /**
+     * @return The non-propagated edit operation applied to this node from AST differencing.
+     */
+	ChangeType getChangeTypeNoProp();
 
     /**
      * @param node The source or destination node to map this node to.
@@ -124,6 +139,7 @@ public interface ClassifiedASTNode {
     	UPDATED,
     	MOVED,
     	UNCHANGED,
+    	INHERITED,
     	UNKNOWN
     }
 
@@ -135,6 +151,5 @@ public interface ClassifiedASTNode {
     	SOURCE,
     	DESTINATION
     }
-
 
 }
