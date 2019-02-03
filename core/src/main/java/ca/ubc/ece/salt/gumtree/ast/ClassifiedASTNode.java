@@ -65,6 +65,11 @@ public interface ClassifiedASTNode {
      */
 	void setMoved(boolean moved);
 
+	/**
+	 * @return {@code true} if the node has been moved in the AST (from AST differencing).
+	 */
+	boolean getIsMoved();
+
     /**
      * @param changeType The change applied to this node from AST differencing.
      */
@@ -84,7 +89,7 @@ public interface ClassifiedASTNode {
      * @return The non-propagated edit operation applied to this node from AST differencing.
      */
 	ChangeType getChangeTypeNoProp();
-
+	
     /**
      * @param node The source or destination node to map this node to.
      */

@@ -37,23 +37,23 @@ public class ASTClassifier {
 	 * @throws InvalidClassException
 	 */
 	public void classifyASTNodes() throws InvalidClassException {
-
 		/* Classify the AST nodes from the Tree nodes. */
+		classifyAs(treeClassifier.getSrcDelTrees(), ChangeType.REMOVED);
+		classifyAs(treeClassifier.getSrcMvTrees(), ChangeType.MOVED);
+		classifyAs(treeClassifier.getSrcUpdTrees(), ChangeType.UPDATED);
 
-		this.classifyAs(this.treeClassifier.getSrcDelTrees(), ChangeType.REMOVED);
-		this.classifyAs(this.treeClassifier.getSrcMvTrees(), ChangeType.MOVED);
-		this.classifyAs(this.treeClassifier.getSrcUpdTrees(), ChangeType.UPDATED);
-
-		this.classifyAs(this.treeClassifier.getDstMvTrees(), ChangeType.MOVED);
-		this.classifyAs(this.treeClassifier.getDstUpdTrees(), ChangeType.UPDATED);
-		this.classifyAs(this.treeClassifier.getDstAddTrees(), ChangeType.INSERTED);
+		classifyAs(treeClassifier.getDstMvTrees(), ChangeType.MOVED);
+		classifyAs(treeClassifier.getDstUpdTrees(), ChangeType.UPDATED);
+		classifyAs(treeClassifier.getDstAddTrees(), ChangeType.INSERTED);
 
 		/* Classify the children of the classified  AST nodes and assign
-		 * node mappings for MOVED and UPDATED nodes. */
-
-		this.classifyASTNode(this.srcTree, ChangeType.UNCHANGED, true);
-		this.classifyASTNode(this.dstTree, ChangeType.UNCHANGED, false);
-
+		 * node mappings for MOVED, UPDATED and UNCHANGED nodes. */
+		propagateChangesToChildren(srcTree, ChangeType.UNCHANGED, false, true);
+		propagateChangesToChildren(dstTree, ChangeType.UNCHANGED, false, false);
+		
+		/* Push changes to ancestors (up to the function level) as UPDATED */
+		propagateChangesToAncestors(srcTree);
+		propagateChangesToAncestors(dstTree);
 	}
 
 	/**
@@ -64,87 +64,94 @@ public class ASTClassifier {
 		return this.uniqueID;
 	}
 	
-	/**
-	 * Reset the unique ID for nodes in between the src and dst analysis.
-	 */
-	private void resetUniqueID() {
-		this.uniqueID = 0;
-	}
-
 	private void classifyAs(Set<ITree> set, ChangeType changeType) throws InvalidClassException {
 
 		/* Iterate through the changed Tree nodes and classify the
 		 * corresponding AST node with the Tree node's class. */
 		for(ITree tree : set) {
 			ClassifiedASTNode astNode = tree.getClassifiedASTNode();
-		    astNode.setChangeType(changeType);
-		    astNode.setChangeTypeNoProp(changeType);
+			switch(changeType) {
+			case INSERTED:
+			case REMOVED:
+			case UPDATED:
+			case UNCHANGED:
+				astNode.setChangeType(changeType);
+				astNode.setChangeTypeNoProp(changeType);
+				astNode.setMoved(false);
+				break;
+			case MOVED:
+				astNode.setChangeType(ChangeType.UNCHANGED);
+				astNode.setChangeTypeNoProp(ChangeType.UNCHANGED);
+				astNode.setMoved(true);
+				break;
+			case UNKNOWN:
+			case INHERITED:
+			default:
+				throw new Error("Unsupported change type in AST change type classification.");
+			}
 		}
 
 	}
+	
+	/**
+	 * Propagate the label up to the statement or function level (depending on needs)
+	 */
+	private void propagateChangesToAncestors(ITree subtree) throws InvalidClassException {
+		/* Propagate UPDATED label upwards if this subtree was inserted, removed or updated. */
+		switch(subtree.getClassifiedASTNode().getChangeTypeNoProp()) {
+		case INSERTED:
+		case REMOVED:
+		case UPDATED:
+			labelAncestorsUpdated(subtree);
+			break;
+		default:
+		}
+		
+		/* Recursively visit children. */
+		for(ITree childOfSubtree : subtree.getChildren()) 
+			propagateChangesToAncestors(childOfSubtree);
+	}
 
 	/**
-	 * Recursively classifies the Tree node's AST nodes with the change type
-	 * of their parent. The classification only occurs if the current node's
-	 * class is {@code UNCHANGED}. If a node is updated, inserted or removed,
-	 * we also label that node's {@code UNCHANGED} or {@code MOVED} ancestors
-	 * as {@code UPDATED} up to the statement level.
-	 * @param child2 The node to classify.
-	 * @param changeType The change type to assign the AST node.
-	 * @throws InvalidClassException
+	 * Propagate change labels down to children.
+	 * @param subtree The subtree to label.
+	 * @param ancenstorChangeType The change type of the current node's ancestors.
+	 * @param isSrc {@code true} if the current tree is the original AST; {@code false} if the current tree is the new AST.
+	 * @throws InvalidClassException 
 	 */
-	private void classifyASTNode(ITree child2, ChangeType changeType, boolean isSrc) throws InvalidClassException {
+	private void propagateChangesToChildren(ITree subtree, ChangeType ancestorChangeType, boolean ancestorMoved, boolean isSrc) throws InvalidClassException {
+		ClassifiedASTNode classifiedNode = subtree.getClassifiedASTNode();
 
-		/* Set the change class for the AST node if it is currently UNCHANGED. */
+		/* This node was moved if its parent was moved. */
+		if(ancestorMoved) classifiedNode.setMoved(true);
 
-		ClassifiedASTNode classifiedNode = child2.getClassifiedASTNode();
-		ChangeType nodeChangeType = classifiedNode.getChangeType();
-
-		/* We may need to assign a change type if it is null (unchanged). */
-		if(nodeChangeType == null) {
-			classifiedNode.setChangeType(ChangeType.UNCHANGED);
-			classifiedNode.setChangeTypeNoProp(ChangeType.UNCHANGED);
-			nodeChangeType = ChangeType.UNCHANGED;
-		}
-
-		if(nodeChangeType == ChangeType.UNCHANGED) {
-			classifiedNode.setChangeType(changeType);
-			if(changeType == ChangeType.INSERTED 
-					|| changeType == ChangeType.REMOVED 
-					|| changeType == ChangeType.MOVED)
+		/* This node assumes the change type of its parent. */
+		if(classifiedNode.getChangeType() == ChangeType.UNKNOWN) {
+			if(ancestorChangeType != ChangeType.UNCHANGED) {
+				classifiedNode.setChangeType(ancestorChangeType);
 				classifiedNode.setChangeTypeNoProp(ChangeType.INHERITED);
-			else
-				classifiedNode.setChangeTypeNoProp(nodeChangeType);
-		}
-		else {
-			/* The node has been changed. */
-			changeType = nodeChangeType;
-
-			/* Since this is a new change type (updated, inserted or removed),
-			 * label the ancestors as 'updated' up to the statement level. */
-			labelAncestorsUpdated(child2);
+			} else {
+				classifiedNode.setChangeType(ChangeType.UNCHANGED);
+				classifiedNode.setChangeTypeNoProp(ChangeType.UNCHANGED);
+			}
 		}
 
-
-		if(changeType == ChangeType.MOVED || changeType == ChangeType.UPDATED || changeType == ChangeType.UNCHANGED) {
-
-			/* Assign the node mapping if this is an UPDATED or MOVED node. */
-
+		/* Assign the node mapping if this is an UPDATED or UNCHANGED node. */
+		if(classifiedNode.getChangeType() == ChangeType.UNCHANGED 
+				|| classifiedNode.getChangeType() == ChangeType.UPDATED) {
 			if(isSrc) {
-				ITree dst = this.mappings.getDst(child2);
+				ITree dst = this.mappings.getDst(subtree);
 				if(dst != null) classifiedNode.map(dst.getClassifiedASTNode());
 			}
 			else {
-				ITree src = this.mappings.getSrc(child2);
+				ITree src = this.mappings.getSrc(subtree);
 				if(src != null) classifiedNode.map(src.getClassifiedASTNode());
 			}
-
 		}
-
+		
 		/* Assign the node a unique id if it does not yet have one. */
-
 		if(classifiedNode.getID() == null) {
-			Integer id = this.getUniqueID();
+			Integer id = getUniqueID();
 			classifiedNode.setID(id);
 			if(classifiedNode.getMapping() != null)
 				classifiedNode.getMapping().setID(id);
@@ -155,9 +162,8 @@ public class ASTClassifier {
 		else classifiedNode.setVersion(Version.DESTINATION);
 
 		/* Classify this node's children with the new change type. */
-
-		for(ITree child : child2.getChildren()) {
-			classifyASTNode(child, changeType, isSrc);
+		for(ITree childOfSubtree : subtree.getChildren()) {
+			propagateChangesToChildren(childOfSubtree, classifiedNode.getChangeType(), classifiedNode.getIsMoved(), isSrc);
 		}
 
 	}
@@ -170,9 +176,6 @@ public class ASTClassifier {
 	 */
 	private static void labelAncestorsUpdated(ITree child2) throws InvalidClassException {
 
-//		/* If this is a statement, there is no ancestor to label. */
-//		if(child2.getClassifiedASTNode().isStatement()) return;
-
 		/* If this is a function, there is no ancestor to label. */
 		if(child2.getClassifiedASTNode().isFunction()) return;
 
@@ -180,12 +183,13 @@ public class ASTClassifier {
 		 * statement. */
 		ITree ancestor = child2.getParent();
 		while(ancestor != null && ancestor.getClassifiedASTNode() != null &&
-			  (ancestor.getClassifiedASTNode().getChangeType() == ChangeType.UNCHANGED ||
-			  ancestor.getClassifiedASTNode().getChangeType() == ChangeType.MOVED)) {
+			  ancestor.getClassifiedASTNode().getChangeType() == ChangeType.UNCHANGED) {
 
-			/* Label the ancestor as updated, since one of its descendants was
-			 * inserted, removed or updated. */
+			/* Label the ancestor, and it's mapped node in the other version, as
+			 * updated, since one of its descendants was inserted, removed or
+			 * updated. */
 			ancestor.getClassifiedASTNode().setChangeType(ChangeType.UPDATED);
+			ancestor.getClassifiedASTNode().getMapping().setChangeType(ChangeType.UPDATED);
 
 			/* If we've reached the statement level, stop. */
 			if(ancestor.getClassifiedASTNode().isFunction()) {
